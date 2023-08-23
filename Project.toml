@@ -1,0 +1,4 @@
+name = "NodeDynamicsDemo"
+uuid = "9e0ea011-8e0f-4cd4-a69d-bb41ba97c1be"
+authors = ["Tasku <topi.rasku@live.fi>"]
+version = "0.1.0"
