@@ -9,6 +9,27 @@ struct EnergyNode
     diffCoeffPrev::Float64
     diffCoeffNext::Float64
     influx::Vector{Float64}
+    function EnergyNode(
+        energyContent::Vector{Float64},
+        selfDischarge::Float64,
+        diffCoeffPrev::Float64,
+        diffCoeffNext::Float64,
+        influx::Vector{Float64}
+    )
+        # Check initial energyContent and sizehint
+        if length(energyContent) != 1
+            @error "`energyContent` should only have one element representing the initial value!"
+        else
+            sizehint!(energyContent, length(influx))
+            new(
+                energyContent,
+                selfDischarge,
+                diffCoeffPrev,
+                diffCoeffNext,
+                influx
+            )
+        end
+    end
 end
 
 
