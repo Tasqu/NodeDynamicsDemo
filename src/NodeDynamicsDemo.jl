@@ -113,7 +113,7 @@ function solve_implicit_dynamics!(chain::NodeChain)
         )
         for dt in unique(chain.timesteps)
     )
-    # Loop over the timesteps and solve the new states.
+    # Loop over the timesteps and solve the states.
     for (i, dt) in enumerate(chain.timesteps)
         # Calculate the initial state vector.
         E_prev = [last(n.energyContent) / dt + n.influx[i] for n in chain.nodes]
@@ -121,6 +121,32 @@ function solve_implicit_dynamics!(chain::NodeChain)
         E_prev[end] += last(chain.nodes).diffCoeffNext * chain.fix_final_boundary[i]
         # Solve the dynamics and save the results
         E_next = invmats[dt] * E_prev
+        push!.(getfield.(chain.nodes, :energyContent), E_next)
+    end
+end
+
+
+function solve_analytical_dynamics!(chain::NodeChain)
+    # Form the dynamics matrix, its inverse, and exponentials.
+    dynmat = Tridiagonal(
+        [n.diffCoeffPrev for n in chain.nodes[2:end]],
+        [-n.selfDischarge - n.diffCoeffPrev - n.diffCoeffNext for n in chain.nodes],
+        [n.diffCoeffNext for n in chain.nodes[1:end-1]],
+    )
+    invmat = inv(dynmat)
+    expmats = Dict(
+        dt => exp(dynmat .* dt)
+        for dt in chain.timesteps
+    )
+    # Loop over the timesteps and solve the states
+    for (i, dt) in enumerate(chain.timesteps)
+        # Fetch current states and influxes
+        E_prev = [last(n.energyContent) for n in chain.nodes]
+        P_prev = [n.influx[i] for n in chain.nodes]
+        P_prev[1] += first(chain.nodes).diffCoeffPrev * chain.fix_initial_boundary[i]
+        P_prev[end] += last(chain.nodes).diffCoeffNext * chain.fix_final_boundary[i]
+        # Calculate and save the the next values
+        E_next = expmats[dt] * E_prev - (I - expmats[dt]) * invmat * P_prev
         push!.(getfield.(chain.nodes, :energyContent), E_next)
     end
 end
@@ -134,6 +160,7 @@ function plot_chain(chain::NodeChain; kwargs...)
     )
 end
 
-export EnergyNode, NodeChain, solve_explicit_dynamics!, solve_implicit_dynamics!, plot_chain
+export EnergyNode, NodeChain, solve_explicit_dynamics!, solve_implicit_dynamics!,
+    solve_analytical_dynamics!, plot_chain
 
 end # module NodeDynamicsDemo
