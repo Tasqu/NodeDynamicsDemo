@@ -160,7 +160,18 @@ function plot_chain(chain::NodeChain; kwargs...)
     )
 end
 
+
+function plot_chain!(plt::Plots.Plot, chain::NodeChain; kwargs...)
+    plot!(
+        plt,
+        cumsum(vcat([0], chain.timesteps)), # Add initial value time step at zero
+        hcat(getfield.(chain.nodes, :energyContent)...);
+        kwargs...
+    )
+end
+
+
 export EnergyNode, NodeChain, solve_explicit_dynamics!, solve_implicit_dynamics!,
-    solve_analytical_dynamics!, plot_chain
+    solve_analytical_dynamics!, plot_chain, plot_chain!
 
 end # module NodeDynamicsDemo
