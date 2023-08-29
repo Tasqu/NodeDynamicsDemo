@@ -47,3 +47,9 @@ Go nuts!
 
 This code is licensed under the [MIT License](https://opensource.org/license/mit/).
 See `LICENSE` for more information.
+
+
+## Acknowledgements
+
+All me, on my free time no less. And just to prove a point.
+Why do I do this to myself?
