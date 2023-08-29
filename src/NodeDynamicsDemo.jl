@@ -126,6 +126,37 @@ function solve_implicit_dynamics!(chain::NodeChain)
 end
 
 
+function solve_implicit_pseudo_dynamics!(chain::NodeChain)
+    # Form the inverse dynamics matrices for unique timestep lenghts
+    invmats = Dict(
+        dt => inv(
+            Tridiagonal(
+                [-n.diffCoeffPrev for n in chain.nodes[2:end]],
+                [
+                    1 / dt +
+                    (1 - (1 - n.selfDischarge)^dt) / dt +
+                    n.diffCoeffPrev +
+                    n.diffCoeffNext
+                    for n in chain.nodes
+                ],
+                [-n.diffCoeffNext for n in chain.nodes[1:end-1]]
+            )
+        )
+        for dt in unique(chain.timesteps)
+    )
+    # Loop over the timesteps and solve the states.
+    for (i, dt) in enumerate(chain.timesteps)
+        # Calculate the initial state vector.
+        E_prev = [last(n.energyContent) / dt + n.influx[i] for n in chain.nodes]
+        E_prev[1] += first(chain.nodes).diffCoeffPrev * chain.fix_initial_boundary[i]
+        E_prev[end] += last(chain.nodes).diffCoeffNext * chain.fix_final_boundary[i]
+        # Solve the dynamics and save the results
+        E_next = invmats[dt] * E_prev
+        push!.(getfield.(chain.nodes, :energyContent), E_next)
+    end
+end
+
+
 function solve_analytical_dynamics!(chain::NodeChain)
     # Form the dynamics matrix, its inverse, and exponentials.
     dynmat = Tridiagonal(
@@ -172,6 +203,7 @@ end
 
 
 export EnergyNode, NodeChain, solve_explicit_dynamics!, solve_implicit_dynamics!,
-    solve_analytical_dynamics!, plot_chain, plot_chain!
+    solve_analytical_dynamics!, plot_chain, plot_chain!,
+    solve_implicit_pseudo_dynamics!
 
 end # module NodeDynamicsDemo
