@@ -95,6 +95,27 @@ function solve_explicit_dynamics!(chain::NodeChain)
 end
 
 
+function solve_explicit_pseudo_dynamics!(chain::NodeChain)
+    # Loop over the timesteps
+    for (i, dt) in enumerate(chain.timesteps)
+        # Loop over the nodes
+        for (j, n) in enumerate(chain.nodes)
+            e_prev = last(n.energyContent)
+            e_next = e_prev * (1 - (1 - (1 - n.selfDischarge)^dt)) + dt * (
+                n.diffCoeffPrev * (
+                    get_node_energy(chain, j - 1, i, :fix_initial_boundary) - e_prev
+                )
+                + n.diffCoeffNext * (
+                    get_node_energy(chain, j + 1, i, :fix_final_boundary) - e_prev
+                )
+                + n.influx[i]
+            )
+            push!(n.energyContent, e_next)
+        end
+    end
+end
+
+
 function solve_implicit_dynamics!(chain::NodeChain)
     # Form the inverse dynamics matrices for unique timestep lenghts
     invmats = Dict(
@@ -204,6 +225,6 @@ end
 
 export EnergyNode, NodeChain, solve_explicit_dynamics!, solve_implicit_dynamics!,
     solve_analytical_dynamics!, plot_chain, plot_chain!,
-    solve_implicit_pseudo_dynamics!
+    solve_implicit_pseudo_dynamics!, solve_explicit_pseudo_dynamics!
 
 end # module NodeDynamicsDemo
